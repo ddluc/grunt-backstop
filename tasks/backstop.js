@@ -10,41 +10,99 @@
 
 module.exports = function(grunt) {
 
-  // Please see the Grunt documentation for more information regarding task
-  // creation: http://gruntjs.com/creating-tasks
 
   grunt.registerMultiTask('backstop', 'backstopjs shim for grunt', function() {
-    // Merge task-specific and/or target-specific options with these defaults.
-    var options = this.options({
-      punctuation: '.',
-      separator: ', '
-    });
 
-    // Iterate over all specified file groups.
-    this.files.forEach(function(f) {
-      // Concat specified files.
-      var src = f.src.filter(function(filepath) {
-        // Warn on and remove invalid source files (if nonull was set).
-        if (!grunt.file.exists(filepath)) {
-          grunt.log.warn('Source file "' + filepath + '" not found.');
-          return false;
-        } else {
-          return true;
+    var child_process = require('child_process'),
+        async = require('async'),
+        path = require('path');
+
+    var cwd = process.cwd(),
+        done = this.async();
+
+    function BackstopShim(data, done) {
+
+      this.backstop_path = path.join(cwd, data.backstop_path);
+      this.test_path = path.join(cwd, data.test_path);
+      this.options = {
+        setup: data.setup,
+        configure: data.configure,
+        create_references: data.create_references,
+        run_tests: data.run_tests
+      };
+      this.done = done;
+
+      this.log = function(err, stdout, stderr) {
+        console.log(stdout);
+        console.log(stderr);
+        if (err !== null) {
+          console.log('ERROR: ' + err);
         }
-      }).map(function(filepath) {
-        // Read file source.
-        return grunt.file.read(filepath);
-      }).join(grunt.util.normalizelf(options.separator));
+      };
 
-      // Handle options.
-      src += options.punctuation;
+      this.setup = function(backstop_path, test_path, cb) {
+        child_process.exec('cp -r ./bitmaps_test ./bitmaps_reference ' + backstop_path, {cwd: test_path}, function(err, stdout, stderr) {
+          this.log(err, stdout, stderr);
+          cb();
+        }.bind(this));
+      };
 
-      // Write the destination file.
-      grunt.file.write(f.dest, src);
+      this.configure = function(backstop_path, test_path, cb) {
+        child_process.exec('npm install', {cwd: backstop_path}, function(err, stdout, stderr) {
+          this.log(err, stdout, stderr);
+          cb(true);
+        }.bind(this));
+      };
 
-      // Print a success message.
-      grunt.log.writeln('File "' + f.dest + '" created.');
-    });
+      this.run_tests = function(backstop_path, test_path, cb) {
+        child_process.exec('gulp test', {cwd: backstop_path}, function(err, stdout, stderr) {
+          this.log(err, stdout, stderr);
+          child_process.exec('cp -rf ./bitmaps_test ' + test_path, {cwd: backstop_path}, function(err, stdout, stderr) {
+            this.log(err, stdout, stderr);
+            cb(true);
+          }.bind(this));
+        }.bind(this));
+      };
+
+      this.create_references = function(backstop_path, test_path, cb) {
+        child_process.exec('gulp reference', {cwd: backstop_path}, function(err, stdout, stderr) {
+          this.log(err, stdout, stderr);
+          child_process.exec('cp -rf ./bitmaps_reference ' + test_path, {cwd: backstop_path}, function(err, stdout, stderr) {
+            this.log(err, stdout, stderr);
+            cb(true);
+          }.bind(this));
+        }.bind(this));
+      };
+
+    }
+
+    var backstop_shim = new BackstopShim(this.data, done);
+
+    async.series([
+      function(cb) {
+        if (this.options.setup) {
+          this.setup(this.backstop_path, this.test_path, cb);
+        } else cb();
+      }.bind(backstop_shim),
+      function(cb) {
+        if (this.options.configure) {
+          this.configure(this.backstop_path, this.test_path, cb);
+        } else cb();
+      }.bind(backstop_shim),
+      function(cb) {
+        if (this.options.create_references) {
+          this.create_references (this.backstop_path, this.test_path, cb);
+        } else cb();
+      }.bind(backstop_shim),
+      function(cb) {
+        if (this.options.run_tests) {
+          this.run_tests(this.backstop_path, this.test_path, cb);
+        } else cb();
+      }.bind(backstop_shim)
+    ], function(err, result) {
+      this.done(true);
+    }.bind(backstop_shim));
+
   });
 
 };
