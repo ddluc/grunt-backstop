@@ -36,12 +36,14 @@ In your project's Gruntfile, add a section named `backstop` to the data object p
 grunt.initConfig({
   backstop: {
     your_target: {
-      backstop_path: './bower_components/backstopjs',
-      test_path: './tests',
-      setup: true,
-      configure: true,
-      create_references: true,
-      run_tests: true
+      options: {
+        backstop_path: './bower_components/backstopjs',
+        test_path: './tests',
+        setup: true,
+        configure: true,
+        create_references: true,
+        run_tests: true
+      }
     },
   },
 });
@@ -89,9 +91,11 @@ You may configure your targets to run as many of the available options, and in a
   3. `create references`
   4. `test`
 
-## TODO
+## Release Notes
 
-* Fix the options. I don't think that I setup the options right. It looks like there is a dedicated options property on the target that would be a more apporpriate place to put the options, and then also provides a good mechanism to provide defaults.
+`0.1.3` - provide sane default options
+
+## TODO
 
 * Create a stop command (The server has a 15 minute time out when you run the tests)
 

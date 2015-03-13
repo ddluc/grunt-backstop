@@ -20,6 +20,15 @@ module.exports = function(grunt) {
     var cwd = process.cwd(),
         done = this.async();
 
+    var options = this.options({
+      backstop_path: './bower_components/backstopjs',
+      test_path: './tests',
+      setup: false,
+      configure: false,
+      create_references: false,
+      run_tests: false
+    });
+
     function BackstopShim(data, done) {
 
       this.backstop_path = path.join(cwd, data.backstop_path);
@@ -76,7 +85,7 @@ module.exports = function(grunt) {
 
     }
 
-    var backstop_shim = new BackstopShim(this.data, done);
+    var backstop_shim = new BackstopShim(options, done);
 
     async.series([
       function(cb) {
