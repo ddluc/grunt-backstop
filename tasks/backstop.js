@@ -90,22 +90,30 @@ module.exports = function(grunt) {
     async.series([
       function(cb) {
         if (this.options.setup) {
-          this.setup(this.backstop_path, this.test_path, cb);
+          this.setup(this.backstop_path, this.test_path, function() {
+            cb();
+          });
         } else cb();
       }.bind(backstop_shim),
       function(cb) {
         if (this.options.configure) {
-          this.configure(this.backstop_path, this.test_path, cb);
+          this.configure(this.backstop_path, this.test_path, function() {
+            cb();
+          });
         } else cb();
       }.bind(backstop_shim),
       function(cb) {
         if (this.options.create_references) {
-          this.create_references (this.backstop_path, this.test_path, cb);
+          this.create_references (this.backstop_path, this.test_path, function() {
+            cb();
+          });
         } else cb();
       }.bind(backstop_shim),
       function(cb) {
         if (this.options.run_tests) {
-          this.run_tests(this.backstop_path, this.test_path, cb);
+          this.run_tests(this.backstop_path, this.test_path, function() {
+            cb(); 
+          });
         } else cb();
       }.bind(backstop_shim)
     ], function(err, result) {
